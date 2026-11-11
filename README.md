@@ -1,5 +1,7 @@
 # SoftFolders
 
+**English** | [繁體中文（臺灣）](README.zh-TW.md)
+
 A lightweight native Windows desktop extension for grouping application shortcuts into phone-style folders.
 
 ![Generated sample folder preview](docs/preview.png)
@@ -24,8 +26,8 @@ Supports Windows 10/11 x64.
 
 1. Download **SoftFolders-Windows-x64.zip** from [Releases](https://github.com/Enchore/SoftFolders/releases/latest).
 2. Extract it to a folder you intend to keep.
-3. Run `SoftFoldersSetup.exe` and choose **安装／更新插件**.
-4. Create a folder using the settings tool or **Desktop → New → 软体夹**. Some Windows 11 context-menu entries appear under **Show more options**.
+3. Run `SoftFoldersSetup.exe` and choose **安裝／更新擴充元件**.
+4. Create a folder using the settings tool or **Desktop → New → 軟體夾**. Some Windows 11 context-menu entries appear under **Show more options**.
 5. Drag application shortcuts into it.
 
 Keep `SoftFoldersSetup.exe` and `SoftFoldersShell.dll` together. Registration is per user. At sign-in, the setup utility runs briefly to attach the desktop handler and then exits.
@@ -38,7 +40,7 @@ Folders are small Unicode `.softfolder` files containing paths and positions. Or
 
 ### Uninstall and update
 
-Run the settings utility and choose **卸载插件**. Folder data and original applications are preserved. A loaded DLL may remain mapped into Explorer until sign-out or a normal Explorer restart. Uninstall and sign out before replacing or removing an in-use DLL; the tool does not forcibly restart Explorer.
+Run the settings utility and choose **解除安裝擴充元件**. Folder data and original applications are preserved. A loaded DLL may remain mapped into Explorer until sign-out or a normal Explorer restart. Uninstall and sign out before replacing or removing an in-use DLL; the tool does not forcibly restart Explorer.
 
 ## Build
 
@@ -71,7 +73,7 @@ Additional interactive diagnostics are available on a normal Windows desktop:
 
 ## Limitations
 
-This is an experimental third-party Explorer extension, not a built-in Windows feature. Defects in an in-process extension can affect Explorer stability. Multi-monitor configurations with mixed DPI have not been exhaustively tested. The UI is currently primarily Chinese, and the binaries are unsigned.
+This is an experimental third-party Explorer extension, not a built-in Windows feature. Defects in an in-process extension can affect Explorer stability. Multi-monitor configurations with mixed DPI have not been exhaustively tested. The UI uses Traditional Chinese (Taiwan), and the binaries are unsigned.
 
 ## Source layout
 

@@ -34,12 +34,12 @@ int WINAPI wWinMain(HINSTANCE,HINSTANCE,PWSTR,int){
     else if(command==L"--open"&&argc>2)result=open(argv[2])?0:5;
     else if(command==L"--convert"&&argc>2){if(!Installed()&&FAILED(install()))result=3;else result=create(argv[2])?0:6;}
     else{
-        TASKDIALOGCONFIG dialog{sizeof(dialog)};dialog.dwFlags=TDF_ALLOW_DIALOG_CANCELLATION|TDF_SIZE_TO_CONTENT;dialog.pszWindowTitle=L"軟體夾 · 原生桌面擴充";dialog.pszMainInstruction=L"軟體夾桌面插件";dialog.pszContent=L"安裝後由 Explorer 處理桌面軟體夾。這個設定工具關閉後不會常駐。\n第一次安裝後請建立或匯入軟體夾。";TASKDIALOG_BUTTON buttons[]={{100,L"安裝／更新插件"},{101,L"新增桌面軟體夾"},{102,L"匯入舊版群組"},{103,L"卸載插件"}};dialog.pButtons=buttons;dialog.cButtons=4;dialog.dwCommonButtons=TDCBF_CLOSE_BUTTON;int choice=0;
+        TASKDIALOGCONFIG dialog{sizeof(dialog)};dialog.dwFlags=TDF_ALLOW_DIALOG_CANCELLATION|TDF_SIZE_TO_CONTENT;dialog.pszWindowTitle=L"軟體夾 · 原生桌面擴充元件";dialog.pszMainInstruction=L"軟體夾桌面擴充元件";dialog.pszContent=L"安裝後由 Windows 檔案總管處理桌面軟體夾。這個設定工具關閉後不會常駐。\n第一次安裝後請建立或匯入軟體夾。";TASKDIALOG_BUTTON buttons[]={{100,L"安裝／更新擴充元件"},{101,L"新增桌面軟體夾"},{102,L"匯入舊版群組"},{103,L"解除安裝擴充元件"}};dialog.pButtons=buttons;dialog.cButtons=4;dialog.dwCommonButtons=TDCBF_CLOSE_BUTTON;int choice=0;
         TaskDialogIndirect(&dialog,&choice,nullptr,nullptr);
-        if(choice==100){auto hr=install();if(FAILED(hr))MessageBoxW(nullptr,L"安裝失敗：請確認資料夾沒有被移動，且 .softfolder 副檔名未由其他工具使用。",L"軟體夾",MB_OK|MB_ICONERROR);else{ImportOld(base);bool active=activate()!=FALSE;MessageBoxW(nullptr,active?L"已啟用桌面單擊。\n可在桌面右鍵→新增→軟體夾，或開啟設定工具新增。\n拖入只會加入軟體，不會展開。設定工具不需要常駐。":L"已註冊，但這次未能連接 Explorer。\n請下次登入後再試，或重新開啟設定工具選安裝／更新。",active?L"安裝完成":L"尚未啟用單擊",MB_OK);}}
+        if(choice==100){auto hr=install();if(FAILED(hr))MessageBoxW(nullptr,L"安裝失敗：請確認資料夾沒有被移動，且 .softfolder 副檔名未由其他工具使用。",L"軟體夾",MB_OK|MB_ICONERROR);else{ImportOld(base);bool active=activate()!=FALSE;MessageBoxW(nullptr,active?L"已啟用桌面點選功能。\n可在桌面右鍵→新增→軟體夾，或開啟設定工具新增。\n拖曳加入只會新增軟體，不會展開。設定工具不需要常駐。":L"已註冊，但這次無法連結至檔案總管。\n請下次登入後再試，或重新開啟設定工具選安裝／更新。",active?L"安裝完成":L"尚未啟用點選功能",MB_OK);}}
         if(choice==101){if(!Installed()&&FAILED(install()))result=3;else create(nullptr);}
         if(choice==102){int count=ImportOld(base);MessageBoxW(nullptr,(L"已匯入 "+std::to_wstring(count)+L" 個群組。\n請把舊版的 data 資料夾放在本工具旁。原本捷徑不會自動刪除。").c_str(),L"匯入",MB_OK);}
-        if(choice==103){if(MessageBoxW(nullptr,L"卸載此插件並停用桌面單擊。軟體夾檔案與原始軟體都會保留。",L"卸載軟體夾",MB_OKCANCEL)==IDOK){uninstall();MessageBoxW(nullptr,L"已移除註冊並停用。已載入 Explorer 的 DLL 會在下次登出或正常重新啟動 Explorer 後釋放。",L"已卸載",MB_OK);}}
+        if(choice==103){if(MessageBoxW(nullptr,L"解除安裝此擴充元件並停用桌面點選功能。軟體夾檔案與原始軟體都會保留。",L"解除安裝軟體夾",MB_OKCANCEL)==IDOK){uninstall();MessageBoxW(nullptr,L"已移除註冊並停用。已載入檔案總管的 DLL 會在下次登出或正常重新啟動檔案總管後釋放。",L"已解除安裝",MB_OK);}}
     }
     if(command==L"--install"&&result==0)RefreshGroupIcons();LocalFree(argv);CoUninitialize();return result;
 }
