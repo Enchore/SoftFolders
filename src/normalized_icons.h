@@ -1,0 +1,26 @@
+#pragma once
+inline std::unique_ptr<Gdiplus::Bitmap> WicImage(IWICBitmapSource* source){if(!source)return nullptr;UINT width=0,height=0;ComPtr<IWICImagingFactory> factory;ComPtr<IWICFormatConverter> convert;
+    if(FAILED(source->GetSize(&width,&height))||!width||!height||width>4096||height>4096||FAILED(CoCreateInstance(CLSID_WICImagingFactory,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&factory)))||FAILED(factory->CreateFormatConverter(&convert))||FAILED(convert->Initialize(source,GUID_WICPixelFormat32bppPBGRA,WICBitmapDitherTypeNone,nullptr,0,WICBitmapPaletteTypeCustom)))return nullptr;
+    auto bitmap=std::make_unique<Gdiplus::Bitmap>((int)width,(int)height,PixelFormat32bppPARGB);Gdiplus::Rect area(0,0,width,height);Gdiplus::BitmapData bits{};if(bitmap->LockBits(&area,Gdiplus::ImageLockModeWrite,PixelFormat32bppPARGB,&bits)!=Gdiplus::Ok)return nullptr;bool ok=bits.Stride>0&&SUCCEEDED(convert->CopyPixels(nullptr,(UINT)bits.Stride,(UINT)bits.Stride*height,(BYTE*)bits.Scan0));bitmap->UnlockBits(&bits);return ok?std::move(bitmap):nullptr;
+}
+inline std::unique_ptr<Gdiplus::Bitmap> OriginalIconImage(const std::wstring& path){
+    std::wstring source=path,target=path;int index=0;
+    if(!_wcsicmp(PathFindExtensionW(path.c_str()),L".lnk")){ComPtr<IShellLinkW> link;ComPtr<IPersistFile> persist;if(SUCCEEDED(CoCreateInstance(CLSID_ShellLink,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&link)))&&SUCCEEDED(link.As(&persist))&&SUCCEEDED(persist->Load(path.c_str(),STGM_READ))){wchar_t icon[32768]{},exe[32768]{};link->GetIconLocation(icon,32768,&index);link->GetPath(exe,32768,nullptr,SLGP_RAWPATH);if(*exe)target=exe;source=*icon?icon:target;}}
+    wchar_t expanded[32768]{};if(ExpandEnvironmentStringsW(source.c_str(),expanded,32768)>0&&*expanded)source=expanded;
+    if(Exists(source)&&!_wcsicmp(PathFindExtensionW(source.c_str()),L".ico")){ComPtr<IWICImagingFactory> factory;ComPtr<IWICBitmapDecoder> decoder;if(SUCCEEDED(CoCreateInstance(CLSID_WICImagingFactory,nullptr,CLSCTX_INPROC_SERVER,IID_PPV_ARGS(&factory)))&&SUCCEEDED(factory->CreateDecoderFromFilename(source.c_str(),nullptr,GENERIC_READ,WICDecodeMetadataCacheOnLoad,&decoder))){UINT count=0;decoder->GetFrameCount(&count);ComPtr<IWICBitmapFrameDecode> best;UINT largest=0;for(UINT i=0;i<count;i++){ComPtr<IWICBitmapFrameDecode> frame;UINT w=0,h=0;if(SUCCEEDED(decoder->GetFrame(i,&frame))&&SUCCEEDED(frame->GetSize(&w,&h))&&w*h>largest){largest=w*h;best=frame;}}if(best){auto image=WicImage(best.Get());if(image)return image;}}}
+    if(Exists(source)){HICON icon=nullptr;UINT id=0;if(PrivateExtractIconsW(source.c_str(),index,256,256,&icon,&id,1,0)&&icon){auto image=IconImage(icon);DestroyIcon(icon);if(image)return image;}}
+    HICON icon=FileIcon(path,128);if(!icon)return nullptr;auto image=IconImage(icon);DestroyIcon(icon);return image;
+}
+inline Gdiplus::Rect VisibleBounds(Gdiplus::Bitmap& bitmap,BYTE threshold=8){int width=bitmap.GetWidth(),height=bitmap.GetHeight(),left=width,top=height,right=-1,bottom=-1;Gdiplus::Rect area(0,0,width,height);Gdiplus::BitmapData bits{};
+    if(bitmap.LockBits(&area,Gdiplus::ImageLockModeRead,PixelFormat32bppPARGB,&bits)!=Gdiplus::Ok)return area;
+    for(int y=0;y<height;y++){auto row=(const BYTE*)bits.Scan0+y*bits.Stride;for(int x=0;x<width;x++)if(row[x*4+3]>threshold){left=std::min(left,x);top=std::min(top,y);right=std::max(right,x);bottom=std::max(bottom,y);}}
+    bitmap.UnlockBits(&bits);return right<left?area:Gdiplus::Rect(left,top,right-left+1,bottom-top+1);
+}
+inline std::unique_ptr<Gdiplus::Bitmap> NormalizedIconImage(const std::wstring& path){auto source=OriginalIconImage(path);if(!source)return nullptr;auto bounds=VisibleBounds(*source);constexpr int canvasSize=256,extent=224;float scale=(float)extent/std::max(bounds.Width,bounds.Height),w=bounds.Width*scale,h=bounds.Height*scale;
+    // App tiles are intended to be square; their exported transparent margins
+    // can be slightly asymmetric. Normalize those tiles to one exact box, but
+    // preserve the proportions of sparse/non-square symbols.
+    if(abs(bounds.Width-bounds.Height)<=std::max(bounds.Width,bounds.Height)*.10f){Gdiplus::BitmapData bits{};if(source->LockBits(&bounds,Gdiplus::ImageLockModeRead,PixelFormat32bppPARGB,&bits)==Gdiplus::Ok){size_t opaque=0;for(int y=0;y<bounds.Height;y++){auto row=(const BYTE*)bits.Scan0+y*bits.Stride;for(int x=0;x<bounds.Width;x++)if(row[x*4+3]>128)opaque++;}source->UnlockBits(&bits);if((double)opaque/(bounds.Width*bounds.Height)>.75)w=h=(float)extent;}}
+    auto normalized=std::make_unique<Gdiplus::Bitmap>(canvasSize,canvasSize,PixelFormat32bppPARGB);Gdiplus::Graphics graphics(normalized.get());graphics.Clear(Gdiplus::Color(0,0,0,0));graphics.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);graphics.SetPixelOffsetMode(Gdiplus::PixelOffsetModeHalf);Gdiplus::ImageAttributes attributes;attributes.SetWrapMode(Gdiplus::WrapModeTileFlipXY);
+    graphics.DrawImage(source.get(),Gdiplus::RectF((canvasSize-w)/2,(canvasSize-h)/2,w,h),(Gdiplus::REAL)bounds.X,(Gdiplus::REAL)bounds.Y,(Gdiplus::REAL)bounds.Width,(Gdiplus::REAL)bounds.Height,Gdiplus::UnitPixel,&attributes);graphics.Flush(Gdiplus::FlushIntentionSync);return normalized;
+}

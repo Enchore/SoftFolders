@@ -1,0 +1,32 @@
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build native extension
+        shell: cmd
+        run: build.cmd
+      - name: Validate icon pipeline
+        shell: cmd
+        run: tests\test.cmd
+      - name: Upload binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: SoftFolders-Windows-x64
+          path: |
+            build/bin/SoftFoldersSetup.exe
+            build/bin/SoftFoldersShell.dll
+            README.md
+          if-no-files-found: error

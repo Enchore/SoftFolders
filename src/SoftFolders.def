@@ -1,0 +1,15 @@
+LIBRARY "SoftFoldersShell"
+EXPORTS
+ DllGetClassObject PRIVATE
+ DllCanUnloadNow PRIVATE
+ DllRegisterServer PRIVATE
+ DllUnregisterServer PRIVATE
+ OpenSoftFolder
+ CreateSoftFolder
+ VerifySoftFolder
+ StopSoftFolders
+ QuerySoftFoldersStatus
+ ActivateSoftFolders
+ GetSoftFolderMetric
+ VerifyDesktopCycle
+ VerifyFolderIcons
